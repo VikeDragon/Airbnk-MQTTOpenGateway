@@ -100,7 +100,8 @@ void scanLock(void* parameter) {
     while (1) {
         if (!pScan->isScanning()) {
             ESP_LOGD("airbnk_mqtt", "Start scanning...");
-            pScan->start(0, nullptr, false);
+           	bool b( nullptr );
+            pScan->start(0, b, false);
         }
         ESP_LOGD("airbnk_mqtt", "BLE scan heartbeat");
         delay(5000);
@@ -119,7 +120,10 @@ class AirbnkGatewayNodeComponent : public Component, public CustomMQTTDevice {
         lockAddress = address;
 
         std::string manData = advertisedDevice.getManufacturerData();
-        char *pHex = NimBLEUtils::buildHexData(nullptr, (uint8_t*)manData.data(), manData.length());
+        //char *pHex = NimBLEUtils::buildHexData(nullptr, (uint8_t*)manData.data(), manData.length());
+		//`NimBLEUtils::buildHexData` replaced with `NimBLEUtils::dataToHexString`, which returns a `std::string` containing the hex string.
+		//static std::string   dataToHexString(const uint8_t* source, uint8_t length);
+		std::string pHex = NimBLEUtils::dataToHexString((uint8_t*)manData.data(), manData.length());
         ESP_LOGD("airbnk_mqtt", "Sending adv");
         int RSSI = advertisedDevice.getRSSI();
         publish_json(advert_topic.c_str(), [=](JsonObject root) {
@@ -127,7 +131,7 @@ class AirbnkGatewayNodeComponent : public Component, public CustomMQTTDevice {
             root["rssi"] = RSSI;
             root["data"] = pHex;
         }, 1, false);
-        delete pHex;
+        //delete pHex;
         return true;
     }
 
@@ -274,7 +278,8 @@ public:
         NimBLEDevice::init("");
         NimBLEDevice::setPower(ESP_PWR_LVL_P9);
         pScan = NimBLEDevice::getScan();
-        pScan->setAdvertisedDeviceCallbacks(new BleAdvertisedDeviceCallbacks(*this), true);
+        //pScan->setAdvertisedDeviceCallbacks(new BleAdvertisedDeviceCallbacks(*this), true);
+		pScan->setScanCallbacks(new BleAdvertisedDeviceCallbacks(*this), true);
         pScan->setInterval(scanInterval);
         pScan->setWindow(scanWindow);
         pScan->setActiveScan(false);
